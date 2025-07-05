@@ -1,33 +1,44 @@
-name: Deploy vpc Instance with Terraform
+name: 'Terraform'
 
-on:
-  push:
-    branches:
-      - main
+on: push
+
 env:
-  TF_CLOUD_ORGANIZATION: "rpatel-terraform-Labs"
-  TF_API_TOKEN: "${{ secrets.TF_API_TOKEN }}"
-  TF_WORKSPACE: "terra-refresh"
+  TF_LOG: INFO
+  TF_INPUT: false
 
 jobs:
   terraform:
+    name: 'Terraform'
     runs-on: ubuntu-latest
 
+    # Use the Bash shell regardless whether the GitHub Actions runner is 
+    # ubuntu-latest, macos-latest, or windows-latest
+    defaults:
+      run:
+        shell: bash
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+    # Checkout the repository to the GitHub Actions runner
+    - name: Checkout
+      uses: actions/checkout@v3
 
-    - name: Set up Terraform
-      uses: hashicorp/setup-terraform@v3
-      with:
-        cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+    # Install the preferred version of Terraform CLI 
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v2
 
-    - name: Initialize Terraform
+    # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
+    - name: Terraform Init
+      id: init
       run: terraform init
 
-    - name: Plan Terraform
-      run: terraform plan
+    # Run a terraform fmt for push
+    - name: Terraform Format
+      id: fmt
+      run: terraform fmt -check
 
-    - name: Apply Terraform
-      run: terraform apply -auto-approve
-
+    # Run a terraform validate
+    # Run even if formatting fails
+    - name: Terraform Validate
+      id: validate
+      if: (success() || failure())
+      run: terraform validate
